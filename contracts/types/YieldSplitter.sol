@@ -2,25 +2,25 @@
 pragma solidity ^0.8.10;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {IgOHM} from "../interfaces/IgOHM.sol";
+import {IgAXDS} from "../interfaces/IgAXDS.sol";
 import {SafeERC20} from "../libraries/SafeERC20.sol";
 
 /**
-    @title IOHMIndexWrapper
-    @notice This interface is used to wrap cross-chain oracles to feed an index without needing IsOHM, 
-    while also being able to use sOHM on mainnet.
+    @title IAXDSIndexWrapper
+    @notice This interface is used to wrap cross-chain oracles to feed an index without needing IsAXDS, 
+    while also being able to use sAXDS on mainnet.
  */
-interface IOHMIndexWrapper {
+interface IAXDSIndexWrapper {
     function index() external view returns (uint256 index);
 }
 
 /**
     @title YieldSplitter
-    @notice Abstract contract that allows users to create deposits for their gOHM and have
+    @notice Abstract contract that allows users to create deposits for their gAXDS and have
             their yield claimable by the specified recipient party. This contract's functions
             are designed to be as generic as possible. This contract's responsibility is
             the accounting of the yield splitting. All other logic such as error handling,
-            emergency controls, sending and recieving gOHM is up to the implementation of
+            emergency controls, sending and recieving gAXDS is up to the implementation of
             this abstract contract to handle.
  */
 abstract contract YieldSplitter {
@@ -28,7 +28,7 @@ abstract contract YieldSplitter {
 
     error YieldSplitter_NotYourDeposit();
 
-    IOHMIndexWrapper public immutable indexWrapper;
+    IAXDSIndexWrapper public immutable indexWrapper;
 
     struct DepositInfo {
         uint256 id;
@@ -43,11 +43,11 @@ abstract contract YieldSplitter {
 
     /**
         @notice Constructor
-        @param indexWrapper_ Address of contract that will return the sOHM to gOHM index. 
-                             On mainnet this will be sOHM but on other chains can be an oracle wrapper.
+        @param indexWrapper_ Address of contract that will return the sAXDS to gAXDS index. 
+                             On mainnet this will be sAXDS but on other chains can be an oracle wrapper.
     */
     constructor(address indexWrapper_) {
-        indexWrapper = IOHMIndexWrapper(indexWrapper_);
+        indexWrapper = IAXDSIndexWrapper(indexWrapper_);
     }
 
     /**
@@ -83,7 +83,7 @@ abstract contract YieldSplitter {
     /**
         @notice Withdraw part of the principal amount deposited.
         @param id_ Id of the deposit.
-        @param amount_ Amount of gOHM to withdraw.
+        @param amount_ Amount of gAXDS to withdraw.
     */
     function _withdrawPrincipal(uint256 id_, uint256 amount_) internal {
         if (depositInfo[id_].depositor != msg.sender) revert YieldSplitter_NotYourDeposit();
@@ -96,7 +96,7 @@ abstract contract YieldSplitter {
     /**
         @notice Withdraw all of the principal amount deposited.
         @param id_ Id of the deposit.
-        @return amountWithdrawn : amount of gOHM withdrawn. 18 decimals.
+        @return amountWithdrawn : amount of gAXDS withdrawn. 18 decimals.
     */
     function _withdrawAllPrincipal(uint256 id_) internal returns (uint256 amountWithdrawn) {
         if (depositInfo[id_].depositor != msg.sender) revert YieldSplitter_NotYourDeposit();
@@ -108,9 +108,9 @@ abstract contract YieldSplitter {
     }
 
     /**
-        @notice Redeem excess yield from your deposit in sOHM.
+        @notice Redeem excess yield from your deposit in sAXDS.
         @param id_ Id of the deposit.
-        @return amountRedeemed : amount of yield redeemed in gOHM. 18 decimals.
+        @return amountRedeemed : amount of yield redeemed in gAXDS. 18 decimals.
     */
     function _redeemYield(uint256 id_) internal returns (uint256 amountRedeemed) {
         DepositInfo storage userDeposit = depositInfo[id_];
@@ -122,10 +122,10 @@ abstract contract YieldSplitter {
     /**
         @notice Close a deposit. Remove all information in both the deposit info, depositorIds and recipientIds.
         @param id_ Id of the deposit.
-        @dev Internally for accounting reasons principal amount is stored in 9 decimal OHM terms. 
-        Since most implementations will work will gOHM, principal here is returned externally in 18 decimal gOHM terms.
-        @return principal : amount of principal that was deleted. in gOHM. 18 decimals.
-        @return agnosticAmount : total amount of gOHM deleted. Principal + Yield. 18 decimals.
+        @dev Internally for accounting reasons principal amount is stored in 9 decimal AXDS terms. 
+        Since most implementations will work will gAXDS, principal here is returned externally in 18 decimal gAXDS terms.
+        @return principal : amount of principal that was deleted. in gAXDS. 18 decimals.
+        @return agnosticAmount : total amount of gAXDS deleted. Principal + Yield. 18 decimals.
     */
     function _closeDeposit(uint256 id_) internal returns (uint256 principal, uint256 agnosticAmount) {
         principal = _toAgnostic(depositInfo[id_].principalAmount);
@@ -146,25 +146,25 @@ abstract contract YieldSplitter {
 
     /**
         @notice Calculate outstanding yield redeemable based on principal and agnosticAmount.
-        @return uint256 amount of yield in gOHM. 18 decimals.
+        @return uint256 amount of yield in gAXDS. 18 decimals.
      */
     function _getOutstandingYield(uint256 principal_, uint256 agnosticAmount_) internal view returns (uint256) {
         return agnosticAmount_ - _toAgnostic(principal_);
     }
 
     /**
-        @notice Convert flat sOHM value to agnostic gOHM value at current index
+        @notice Convert flat sAXDS value to agnostic gAXDS value at current index
         @dev Agnostic value earns rebases. Agnostic value is amount / rebase_index.
-             1e18 is because sOHM has 9 decimals, gOHM has 18 and index has 9.
+             1e18 is because sAXDS has 9 decimals, gAXDS has 18 and index has 9.
      */
     function _toAgnostic(uint256 amount_) internal view returns (uint256) {
         return (amount_ * 1e18) / (indexWrapper.index());
     }
 
     /**
-        @notice Convert agnostic gOHM value at current index to flat sOHM value
-        @dev Agnostic value earns rebases. sOHM amount is gOHMamount * rebase_index.
-             1e18 is because sOHM has 9 decimals, gOHM has 18 and index has 9.
+        @notice Convert agnostic gAXDS value at current index to flat sAXDS value
+        @dev Agnostic value earns rebases. sAXDS amount is gAXDSamount * rebase_index.
+             1e18 is because sAXDS has 9 decimals, gAXDS has 18 and index has 9.
      */
     function _fromAgnostic(uint256 amount_) internal view returns (uint256) {
         return (amount_ * (indexWrapper.index())) / 1e18;

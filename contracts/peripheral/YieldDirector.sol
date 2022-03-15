@@ -2,23 +2,23 @@
 pragma solidity ^0.8.10;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {IsOHM} from "../interfaces/IsOHM.sol";
+import {IsAXDS} from "../interfaces/IsAXDS.sol";
 import {SafeERC20} from "../libraries/SafeERC20.sol";
 import {IYieldDirector} from "../interfaces/IYieldDirector.sol";
-import {OlympusAccessControlled, IOlympusAuthority} from "../types/OlympusAccessControlled.sol";
+import {AxodusAccessControlled, IAxodusAuthority} from "../types/AxodusAccessControlled.sol";
 
 /**
     @title YieldDirector (codename Tyche) 
-    @notice This contract allows donors to deposit their sOHM and donate their rebases
+    @notice This contract allows donors to deposit their sAXDS and donate their rebases
             to any address. Donors will be able to withdraw their principal
-            sOHM at any time. Donation recipients can also redeem accrued rebases at any time.
+            sAXDS at any time. Donation recipients can also redeem accrued rebases at any time.
  */
-contract YieldDirector is IYieldDirector, OlympusAccessControlled {
+contract YieldDirector is IYieldDirector, AxodusAccessControlled {
     using SafeERC20 for IERC20;
 
     uint256 private constant MAX_UINT256 = type(uint256).max;
 
-    address public immutable sOHM;
+    address public immutable sAXDS;
 
     bool public depositDisabled;
     bool public withdrawDisabled;
@@ -28,7 +28,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         address recipient;
         uint256 deposit; // Total non-agnostic amount deposited
         uint256 agnosticDeposit; // Total agnostic amount deposited
-        uint256 carry; // Amount of sOHM accumulated over on deposit/withdraw
+        uint256 carry; // Amount of sAXDS accumulated over on deposit/withdraw
         uint256 indexAtLastChange; // Index of last deposit/withdraw
     }
 
@@ -49,10 +49,10 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     event Redeemed(address indexed recipient_, uint256 amount_);
     event EmergencyShutdown(bool active_);
 
-    constructor(address sOhm_, address authority_) OlympusAccessControlled(IOlympusAuthority(authority_)) {
-        require(sOhm_ != address(0), "Invalid address for sOHM");
+    constructor(address sOhm_, address authority_) AxodusAccessControlled(IAxodusAuthority(authority_)) {
+        require(sOhm_ != address(0), "Invalid address for sAXDS");
 
-        sOHM = sOhm_;
+        sAXDS = sOhm_;
     }
 
     /************************
@@ -60,8 +60,8 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
      ************************/
 
     /**
-        @notice Deposit sOHM, records sender address and assign rebases to recipient
-        @param amount_ Amount of sOHM debt issued from donor to recipient
+        @notice Deposit sAXDS, records sender address and assign rebases to recipient
+        @param amount_ Amount of sAXDS debt issued from donor to recipient
         @param recipient_ Address to direct staking yield and vault shares to
     */
     function deposit(uint256 amount_, address recipient_) external override {
@@ -69,9 +69,9 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         require(amount_ > 0, "Invalid deposit amount");
         require(recipient_ != address(0), "Invalid recipient address");
 
-        IERC20(sOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(sAXDS).safeTransferFrom(msg.sender, address(this), amount_);
 
-        uint256 index = IsOHM(sOHM).index();
+        uint256 index = IsAXDS(sAXDS).index();
 
         // Record donors's issued debt to recipient address
         DonationInfo[] storage donations = donationInfo[msg.sender];
@@ -108,13 +108,13 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Withdraw donor's sOHM from vault and subtracts debt from recipient
+        @notice Withdraw donor's sAXDS from vault and subtracts debt from recipient
      */
     function withdraw(uint256 amount_, address recipient_) external override {
         require(!withdrawDisabled, "Withdraws currently disabled");
         require(amount_ > 0, "Invalid withdraw amount");
 
-        uint256 index = IsOHM(sOHM).index();
+        uint256 index = IsAXDS(sAXDS).index();
 
         // Donor accounting
         uint256 recipientIndex = _getRecipientIndex(msg.sender, recipient_);
@@ -150,7 +150,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         recipient.agnosticDebt = _toAgnostic(recipient.totalDebt + recipient.carry);
         recipient.indexAtLastChange = index;
 
-        IERC20(sOHM).safeTransfer(msg.sender, amount_);
+        IERC20(sAXDS).safeTransfer(msg.sender, amount_);
 
         emit Withdrawn(msg.sender, recipient_, amount_);
     }
@@ -166,7 +166,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         uint256 donationsLength = donations.length;
         require(donationsLength != 0, "User not donating to anything");
 
-        uint256 sOhmIndex = IsOHM(sOHM).index();
+        uint256 sOhmIndex = IsAXDS(sAXDS).index();
         uint256 total = 0;
 
         for (uint256 index = 0; index < donationsLength; index++) {
@@ -189,13 +189,13 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         // Delete donor's entire donations array
         delete donationInfo[msg.sender];
 
-        IERC20(sOHM).safeTransfer(msg.sender, total);
+        IERC20(sAXDS).safeTransfer(msg.sender, total);
 
         emit AllWithdrawn(msg.sender, total);
     }
 
     /**
-        @notice Get deposited sOHM amount for specific recipient
+        @notice Get deposited sAXDS amount for specific recipient
      */
     function depositsTo(address donor_, address recipient_) external view override returns (uint256) {
         uint256 recipientIndex = _getRecipientIndex(donor_, recipient_);
@@ -205,7 +205,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Return total amount of donor's sOHM deposited
+        @notice Return total amount of donor's sAXDS deposited
      */
     function totalDeposits(address donor_) external view override returns (uint256) {
         DonationInfo[] storage donations = donationInfo[donor_];
@@ -240,7 +240,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Return total amount of sOHM donated to recipient since last full withdrawal
+        @notice Return total amount of sAXDS donated to recipient since last full withdrawal
      */
     function donatedTo(address donor_, address recipient_) external view override returns (uint256) {
         uint256 recipientIndex = _getRecipientIndex(donor_, recipient_);
@@ -251,7 +251,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Return total amount of sOHM donated from donor since last full withdrawal
+        @notice Return total amount of sAXDS donated from donor since last full withdrawal
      */
     function totalDonated(address donor_) external view override returns (uint256) {
         DonationInfo[] storage donations = donationInfo[donor_];
@@ -270,7 +270,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
      ************************/
 
     /**
-        @notice Get redeemable sOHM balance of a recipient address
+        @notice Get redeemable sAXDS balance of a recipient address
      */
     function redeemableBalance(address recipient_) public view override returns (uint256) {
         RecipientInfo storage recipient = recipientInfo[recipient_];
@@ -278,9 +278,9 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Redeem recipient's full donated amount of sOHM at current index
+        @notice Redeem recipient's full donated amount of sAXDS at current index
         @dev Note that a recipient redeeming their vault shares effectively pays back all
-             sOHM debt to donors at the time of redeem. Any future incurred debt will
+             sAXDS debt to donors at the time of redeem. Any future incurred debt will
              be accounted for with a subsequent redeem or a withdrawal by the specific donor.
      */
     function redeem() external override {
@@ -292,9 +292,9 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
         RecipientInfo storage recipient = recipientInfo[msg.sender];
         recipient.agnosticDebt = _toAgnostic(recipient.totalDebt);
         recipient.carry = 0;
-        recipient.indexAtLastChange = IsOHM(sOHM).index();
+        recipient.indexAtLastChange = IsAXDS(sAXDS).index();
 
-        IERC20(sOHM).safeTransfer(msg.sender, redeemable);
+        IERC20(sAXDS).safeTransfer(msg.sender, redeemable);
 
         emit Redeemed(msg.sender, redeemable);
     }
@@ -304,7 +304,7 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
      ************************/
 
     /**
-        @notice Get accumulated sOHM since last time agnostic value changed.
+        @notice Get accumulated sAXDS since last time agnostic value changed.
      */
     function _getAccumulatedValue(uint256 gAmount_, uint256 indexAtLastChange_) internal view returns (uint256) {
         return _fromAgnostic(gAmount_) - _fromAgnosticAtIndex(gAmount_, indexAtLastChange_);
@@ -328,27 +328,27 @@ contract YieldDirector is IYieldDirector, OlympusAccessControlled {
     }
 
     /**
-        @notice Convert flat sOHM value to agnostic value at current index
+        @notice Convert flat sAXDS value to agnostic value at current index
         @dev Agnostic value earns rebases. Agnostic value is amount / rebase_index.
-             1e9 is because sOHM has 9 decimals.
+             1e9 is because sAXDS has 9 decimals.
      */
     function _toAgnostic(uint256 amount_) internal view returns (uint256) {
-        return (amount_ * 1e9) / (IsOHM(sOHM).index());
+        return (amount_ * 1e9) / (IsAXDS(sAXDS).index());
     }
 
     /**
-        @notice Convert agnostic value at current index to flat sOHM value
+        @notice Convert agnostic value at current index to flat sAXDS value
         @dev Agnostic value earns rebases. Agnostic value is amount / rebase_index.
-             1e9 is because sOHM has 9 decimals.
+             1e9 is because sAXDS has 9 decimals.
      */
     function _fromAgnostic(uint256 amount_) internal view returns (uint256) {
-        return (amount_ * (IsOHM(sOHM).index())) / 1e9;
+        return (amount_ * (IsAXDS(sAXDS).index())) / 1e9;
     }
 
     /**
-        @notice Convert flat sOHM value to agnostic value at a given index value
+        @notice Convert flat sAXDS value to agnostic value at a given index value
         @dev Agnostic value earns rebases. Agnostic value is amount / rebase_index.
-             1e9 is because sOHM has 9 decimals.
+             1e9 is because sAXDS has 9 decimals.
      */
     function _fromAgnosticAtIndex(uint256 amount_, uint256 index_) internal pure returns (uint256) {
         return (amount_ * index_) / 1e9;

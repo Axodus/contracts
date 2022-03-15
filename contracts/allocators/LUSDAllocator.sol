@@ -8,14 +8,14 @@ import "../interfaces/ITreasury.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/LiquityInterfaces.sol";
-import "../types/OlympusAccessControlled.sol";
+import "../types/AxodusAccessControlled.sol";
 
 /**
  *  Contract deploys reserves from treasury into the liquity stabilty pool, and those rewards
  *  are then paid out to the staking contract.  See harvest() function for more details.
  */
 
-contract LUSDAllocator is OlympusAccessControlled {
+contract LUSDAllocator is AxodusAccessControlled {
     /* ======== DEPENDENCIES ======== */
 
     using SafeERC20 for IERC20;
@@ -28,7 +28,7 @@ contract LUSDAllocator is OlympusAccessControlled {
     ILQTYStaking immutable lqtyStaking;
     IWETH immutable weth; // WETH address (0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
     ISwapRouter immutable swapRouter;
-    ITreasury public treasury; // Olympus Treasury
+    ITreasury public treasury; // Axodus Treasury
 
     uint256 public constant FEE_PRECISION = 1e6;
     uint256 public constant POOL_FEE_MAX = 10000;
@@ -71,7 +71,7 @@ contract LUSDAllocator is OlympusAccessControlled {
         address _wethAddress,
         address _hopTokenAddress,
         address _uniswapV3Router
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
+    ) AxodusAccessControlled(IAxodusAuthority(_authority)) {
         treasury = ITreasury(_treasury);
         lusdTokenAddress = _lusdTokenAddress;
         lqtyTokenAddress = _lqtyTokenAddress;
@@ -235,7 +235,7 @@ contract LUSDAllocator is OlympusAccessControlled {
 
             _accountingFor(balance, value, false); // account for withdrawal
 
-            treasury.deposit(balance, token, value); // deposit using value as profit so no OHM is minted
+            treasury.deposit(balance, token, value); // deposit using value as profit so no AXDS is minted
         } else {
             lqtyStaking.unstake(amount);
 
@@ -284,7 +284,7 @@ contract LUSDAllocator is OlympusAccessControlled {
     }
 
     /**
-    Helper method copying OlympusTreasury::_tokenValue(), whose name was 'valueOf()' in v1 
+    Helper method copying AxodusTreasury::_tokenValue(), whose name was 'valueOf()' in v1 
     Implemented here so we don't have to upgrade contract later
      */
     function _tokenValue(address _token, uint256 _amount) internal view returns (uint256 value_) {

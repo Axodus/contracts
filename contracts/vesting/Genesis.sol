@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 import "../interfaces/ITreasury.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IgAXDS.sol";
 import "../interfaces/IStaking.sol";
 import "../types/Ownable.sol";
 
@@ -14,14 +14,14 @@ interface IClaim {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 claimed; // static number
         uint256 wClaimed; // rebase-tracking number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal AXDS amount can claim
     }
 
     function terms(address _address) external view returns (Term memory);
 }
 
 /**
- *  This contract allows Olympus genesis contributors to claim OHM. It has been
+ *  This contract allows Axodus genesis contributors to claim AXDS. It has been
  *  revised to consider 9/10 tokens as staked at the time of claim; previously,
  *  no claims were treated as staked. This change keeps network ownership in check.
  *  100% can be treated as staked, if the DAO sees fit to do so.
@@ -38,23 +38,23 @@ contract GenesisClaim is Ownable {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 claimed; // static number
         uint256 gClaimed; // rebase-tracking number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal AXDS amount can claim
     }
 
     /* ========== STATE VARIABLES ========== */
 
     // claim token
-    IERC20 internal immutable ohm = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+    IERC20 internal immutable axds = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
     // payment token
     IERC20 internal immutable dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     // mints claim token
     ITreasury internal immutable treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
-    // stake OHM for sOHM
+    // stake AXDS for sAXDS
     IStaking internal immutable staking = IStaking(0xB63cac384247597756545b500253ff8E607a8020);
     // holds non-circulating supply
     address internal immutable dao = 0x245cc372C84B3645Bf0Ffe6538620B04a217988B;
     // tracks rebase-agnostic balance
-    IgOHM internal immutable gOHM = IgOHM(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
+    IgAXDS internal immutable gAXDS = IgAXDS(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
     // previous deployment of contract (to migrate terms)
     IClaim internal immutable previous = IClaim(0xEaAA9d97Be33a764031eDdEbA1cB6Cb385350Ca3);
 
@@ -76,16 +76,16 @@ contract GenesisClaim is Ownable {
     /* ========== MUTABLE FUNCTIONS ========== */
 
     /**
-     * @notice allows wallet to claim OHM
+     * @notice allows wallet to claim AXDS
      * @param _to address
      * @param _amount uint256
      */
     function claim(address _to, uint256 _amount) external {
-        ohm.safeTransfer(_to, _claim(_amount));
+        axds.safeTransfer(_to, _claim(_amount));
     }
 
     /**
-     * @notice allows wallet to claim OHM and stake. set _claim = true if warmup is 0.
+     * @notice allows wallet to claim AXDS and stake. set _claim = true if warmup is 0.
      * @param _to address
      * @param _amount uint256
      * @param _rebasing bool
@@ -101,7 +101,7 @@ contract GenesisClaim is Ownable {
     }
 
     /**
-     * @notice logic for claiming OHM
+     * @notice logic for claiming AXDS
      * @param _amount uint256
      * @return toSend_ uint256
      */
@@ -115,9 +115,9 @@ contract GenesisClaim is Ownable {
         require(info.max.sub(claimed(msg.sender)) >= toSend_, "Claim more than max");
 
         if (useStatic) {
-            terms[msg.sender].gClaimed = info.gClaimed.add(gOHM.balanceTo(toSend_.mul(9).div(10)));
+            terms[msg.sender].gClaimed = info.gClaimed.add(gAXDS.balanceTo(toSend_.mul(9).div(10)));
             terms[msg.sender].claimed = info.claimed.add(toSend_.div(10));
-        } else terms[msg.sender].gClaimed = info.gClaimed.add(gOHM.balanceTo(toSend_));
+        } else terms[msg.sender].gClaimed = info.gClaimed.add(gAXDS.balanceTo(toSend_));
     }
 
     /**
@@ -146,14 +146,14 @@ contract GenesisClaim is Ownable {
      * @notice mass approval saves gas
      */
     function approve() external {
-        ohm.approve(address(staking), 1e33);
+        axds.approve(address(staking), 1e33);
         dai.approve(address(treasury), 1e33);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice view OHM claimable for address. DAI decimals (18).
+     * @notice view AXDS claimable for address. DAI decimals (18).
      * @param _address address
      * @return uint256
      */
@@ -165,21 +165,21 @@ contract GenesisClaim is Ownable {
     }
 
     /**
-     * @notice view OHM claimed by address. OHM decimals (9).
+     * @notice view AXDS claimed by address. AXDS decimals (9).
      * @param _address address
      * @return uint256
      */
     function claimed(address _address) public view returns (uint256) {
-        return gOHM.balanceFrom(terms[_address].gClaimed).add(terms[_address].claimed);
+        return gAXDS.balanceFrom(terms[_address].gClaimed).add(terms[_address].claimed);
     }
 
     /**
-     * @notice view circulating supply of OHM
+     * @notice view circulating supply of AXDS
      * @notice calculated as total supply minus DAO holdings
      * @return uint256
      */
     function circulatingSupply() public view returns (uint256) {
-        return treasury.baseSupply().sub(ohm.balanceOf(dao));
+        return treasury.baseSupply().sub(axds.balanceOf(dao));
     }
 
     /* ========== OWNER FUNCTIONS ========== */

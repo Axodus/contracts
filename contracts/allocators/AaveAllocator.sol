@@ -8,7 +8,7 @@ import "../libraries/SafeERC20.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/ITreasury.sol";
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/AxodusAccessControlled.sol";
 
 interface ILendingPool {
     function deposit(
@@ -47,7 +47,7 @@ interface IStakedTokenIncentivesController {
  *  earning interest and $stkAAVE.
  */
 
-contract AaveAllocator is OlympusAccessControlled {
+contract AaveAllocator is AxodusAccessControlled {
     /* ======== DEPENDENCIES ======== */
 
     using SafeERC20 for IERC20;
@@ -69,7 +69,7 @@ contract AaveAllocator is OlympusAccessControlled {
         IStakedTokenIncentivesController(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
     // Aave Lending Pool
     ILendingPool internal immutable lendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
-    // Olympus Treasury
+    // Axodus Treasury
     ITreasury internal immutable treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
 
     // all relevant aTokens
@@ -86,7 +86,7 @@ contract AaveAllocator is OlympusAccessControlled {
 
     /* ======== CONSTRUCTOR ======== */
 
-    constructor(IOlympusAuthority _authority) OlympusAccessControlled(_authority) {
+    constructor(IAxodusAuthority _authority) AxodusAccessControlled(_authority) {
         referralCode = 0;
     }
 

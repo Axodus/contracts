@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 import "../interfaces/ITreasury.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IgAXDS.sol";
 import "../interfaces/IStaking.sol";
 import "../types/Ownable.sol";
 
@@ -13,14 +13,14 @@ interface IClaim {
     struct Term {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 wClaimed; // static number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal AXDS amount can claim
     }
 
     function terms(address _address) external view returns (Term memory);
 }
 
 /**
- *  This contract allows Olympus seed investors and advisors to claim tokens.
+ *  This contract allows Axodus seed investors and advisors to claim tokens.
  *  It has been revised to consider claims as staked immediately for accounting purposes.
  *  This ensures that network ownership does not exceed disclosed levels.
  *  Claimants remain protected from network dilution that may arise, but claim and stake
@@ -39,23 +39,23 @@ contract InvestorClaimV2 is Ownable {
     struct Term {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 gClaimed; // rebase-agnostic number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal AXDS amount can claim
     }
 
     /* ========== STATE VARIABLES ========== */
 
     // claim token
-    IERC20 internal immutable ohm = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+    IERC20 internal immutable axds = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
     // payment token
     IERC20 internal immutable dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     // mints claim token
     ITreasury internal immutable treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
-    // stake OHM for sOHM
+    // stake AXDS for sAXDS
     IStaking internal immutable staking = IStaking(0xB63cac384247597756545b500253ff8E607a8020);
     // holds non-circulating supply
     address internal immutable dao = 0x245cc372C84B3645Bf0Ffe6538620B04a217988B;
     // tracks rebase-agnostic balance
-    IgOHM internal immutable gOHM = IgOHM(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
+    IgAXDS internal immutable gAXDS = IgAXDS(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
     // previous deployment of contract (to migrate terms)
     IClaim internal immutable previous = IClaim(0xaCCC8306455BaA01593Fa6267809fEA72F684169);
 
@@ -73,16 +73,16 @@ contract InvestorClaimV2 is Ownable {
     /* ========== MUTABLE FUNCTIONS ========== */
 
     /**
-     * @notice allows wallet to claim OHM
+     * @notice allows wallet to claim AXDS
      * @param _to address
      * @param _amount uint256
      */
     function claim(address _to, uint256 _amount) external {
-        ohm.safeTransfer(_to, _claim(_amount));
+        axds.safeTransfer(_to, _claim(_amount));
     }
 
     /**
-     * @notice allows wallet to claim OHM and stake. set _claim = true if warmup is 0.
+     * @notice allows wallet to claim AXDS and stake. set _claim = true if warmup is 0.
      * @param _to address
      * @param _amount uint256
      * @param _rebasing bool
@@ -98,7 +98,7 @@ contract InvestorClaimV2 is Ownable {
     }
 
     /**
-     * @notice logic for claiming OHM
+     * @notice logic for claiming AXDS
      * @param _amount uint256
      * @return toSend_ uint256
      */
@@ -111,7 +111,7 @@ contract InvestorClaimV2 is Ownable {
         require(redeemableFor(msg.sender).div(1e9) >= toSend_, "Claim more than vested");
         require(info.max.sub(claimed(msg.sender)) >= toSend_, "Claim more than max");
 
-        terms[msg.sender].gClaimed = info.gClaimed.add(gOHM.balanceTo(toSend_));
+        terms[msg.sender].gClaimed = info.gClaimed.add(gAXDS.balanceTo(toSend_));
     }
 
     /**
@@ -140,14 +140,14 @@ contract InvestorClaimV2 is Ownable {
      * @notice mass approval saves gas
      */
     function approve() external {
-        ohm.approve(address(staking), 1e33);
+        axds.approve(address(staking), 1e33);
         dai.approve(address(treasury), 1e33);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice view OHM claimable for address. DAI decimals (18).
+     * @notice view AXDS claimable for address. DAI decimals (18).
      * @param _address address
      * @return uint256
      */
@@ -159,21 +159,21 @@ contract InvestorClaimV2 is Ownable {
     }
 
     /**
-     * @notice view OHM claimed by address. OHM decimals (9).
+     * @notice view AXDS claimed by address. AXDS decimals (9).
      * @param _address address
      * @return uint256
      */
     function claimed(address _address) public view returns (uint256) {
-        return gOHM.balanceFrom(terms[_address].gClaimed);
+        return gAXDS.balanceFrom(terms[_address].gClaimed);
     }
 
     /**
-     * @notice view circulating supply of OHM
+     * @notice view circulating supply of AXDS
      * @notice calculated as total supply minus DAO holdings
      * @return uint256
      */
     function circulatingSupply() public view returns (uint256) {
-        return treasury.baseSupply().sub(ohm.balanceOf(dao));
+        return treasury.baseSupply().sub(axds.balanceOf(dao));
     }
 
     /* ========== OWNER FUNCTIONS ========== */

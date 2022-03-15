@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
 
-//import {IgOHM} from "../interfaces/IgOHM.sol";
+//import {IgAXDS} from "../interfaces/IgAXDS.sol";
 import {MockERC20} from "./MockERC20.sol";
 
-// TODO fulfills IgOHM but is not inheriting because of dependency issues
+// TODO fulfills IgAXDS but is not inheriting because of dependency issues
 contract MockGOhm is MockERC20 {
     /* ========== CONSTRUCTOR ========== */
 
     uint256 public immutable index;
 
-    constructor(uint256 _initIndex) MockERC20("Governance OHM", "gOHM", 18) {
+    constructor(uint256 _initIndex) MockERC20("Governance AXDS", "gAXDS", 18) {
         index = _initIndex;
     }
 

@@ -115,7 +115,7 @@ contract GroDAIAllocator is Ownable {
         accountingFor(balance, value, false);
 
         IERC20(DAI).approve(address(treasury), balance); // approve to deposit asset into treasury
-        treasury.deposit(balance, DAI, value); // deposit using value as profit so no OHM is minted
+        treasury.deposit(balance, DAI, value); // deposit using value as profit so no AXDS is minted
     }
 
     /**

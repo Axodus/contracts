@@ -5,9 +5,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
 /**
- * A mock version of sOHM, with an over-simplified rebase mechanism, for testing purposes only
+ * A mock version of sAXDS, with an over-simplified rebase mechanism, for testing purposes only
  */
-contract MockSOHM is ERC20 {
+contract MockSAXDS is ERC20 {
     uint256 public immutable DECIMALS;
     uint256 public _index; // 9 decimals
     uint256 public _rebasePct; // 9 decimals
@@ -16,7 +16,7 @@ contract MockSOHM is ERC20 {
     mapping(address => uint256) public _agnosticBalance;
     mapping(address => mapping(address => uint256)) public _allowedValue;
 
-    constructor(uint256 initialIndex_, uint256 rebasePct_) ERC20("Mock sOHM", "sOHM") {
+    constructor(uint256 initialIndex_, uint256 rebasePct_) ERC20("Mock sAXDS", "sAXDS") {
         require(initialIndex_ > 0, "initial index must be greater than 0");
         require(rebasePct_ > 0, "rebase percentage must be greater than 0");
 
@@ -105,7 +105,7 @@ contract MockSOHM is ERC20 {
         _index = newIndex_;
     }
 
-    // Drip 100 sOHM to caller
+    // Drip 100 sAXDS to caller
     function drip() external {
         mint(msg.sender, 100000000000);
     }

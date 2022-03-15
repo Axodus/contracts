@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.10;
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/AxodusAccessControlled.sol";
 import "../interfaces/IERC20.sol";
 
-abstract contract FrontEndRewarder is OlympusAccessControlled {
+abstract contract FrontEndRewarder is AxodusAccessControlled {
     /* ========= STATE VARIABLES ========== */
 
     uint256 public daoReward; // % reward for dao (3 decimals: 100 = 1%)
@@ -12,10 +12,10 @@ abstract contract FrontEndRewarder is OlympusAccessControlled {
     mapping(address => uint256) public rewards; // front end operator rewards
     mapping(address => bool) public whitelisted; // whitelisted status for operators
 
-    IERC20 internal immutable ohm; // reward token
+    IERC20 internal immutable axds; // reward token
 
-    constructor(IOlympusAuthority _authority, IERC20 _ohm) OlympusAccessControlled(_authority) {
-        ohm = _ohm;
+    constructor(IAxodusAuthority _authority, IERC20 _axds) AxodusAccessControlled(_authority) {
+        axds = _axds;
     }
 
     /* ========= EXTERNAL FUNCTIONS ========== */
@@ -25,7 +25,7 @@ abstract contract FrontEndRewarder is OlympusAccessControlled {
         uint256 reward = rewards[msg.sender];
 
         rewards[msg.sender] = 0;
-        ohm.transfer(msg.sender, reward);
+        axds.transfer(msg.sender, reward);
     }
 
     /* ========= INTERNAL ========== */

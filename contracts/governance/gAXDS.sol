@@ -4,11 +4,11 @@ pragma solidity ^0.7.5;
 import "../libraries/SafeMath.sol";
 import "../libraries/Address.sol";
 
-import "../interfaces/IsOHM.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IsAXDS.sol";
+import "../interfaces/IgAXDS.sol";
 import "../types/ERC20.sol";
 
-contract gOHM is IgOHM, ERC20 {
+contract gAXDS is IgAXDS, ERC20 {
     /* ========== DEPENDENCIES ========== */
 
     using Address for address;
@@ -36,7 +36,7 @@ contract gOHM is IgOHM, ERC20 {
 
     /* ========== STATE VARIABLES ========== */
 
-    IsOHM public sOHM;
+    IsAXDS public sAXDS;
     address public approved; // minter
     bool public migrated;
 
@@ -46,11 +46,11 @@ contract gOHM is IgOHM, ERC20 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _migrator, address _sOHM) ERC20("Governance OHM", "gOHM", 18) {
+    constructor(address _migrator, address _sAXDS) ERC20("Governance AXDS", "gAXDS", 18) {
         require(_migrator != address(0), "Zero address: Migrator");
         approved = _migrator;
-        require(_sOHM != address(0), "Zero address: sOHM");
-        sOHM = IsOHM(_sOHM);
+        require(_sAXDS != address(0), "Zero address: sAXDS");
+        sAXDS = IsAXDS(_sAXDS);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -59,9 +59,9 @@ contract gOHM is IgOHM, ERC20 {
      * @notice transfer mint rights from migrator to staking
      * @notice can only be done once, at the time of contract migration
      * @param _staking address
-     * @param _sOHM address
+     * @param _sAXDS address
      */
-    function migrate(address _staking, address _sOHM) external override onlyApproved {
+    function migrate(address _staking, address _sAXDS) external override onlyApproved {
         require(!migrated, "Migrated");
         migrated = true;
 
@@ -69,8 +69,8 @@ contract gOHM is IgOHM, ERC20 {
         require(_staking != address(0), "Zero address found");
         approved = _staking;
 
-        require(_sOHM != address(0), "Zero address found");
-        sOHM = IsOHM(_sOHM);
+        require(_sAXDS != address(0), "Zero address found");
+        sAXDS = IsAXDS(_sAXDS);
     }
 
     /**
@@ -82,7 +82,7 @@ contract gOHM is IgOHM, ERC20 {
     }
 
     /**
-        @notice mint gOHM
+        @notice mint gAXDS
         @param _to address
         @param _amount uint
      */
@@ -91,7 +91,7 @@ contract gOHM is IgOHM, ERC20 {
     }
 
     /**
-        @notice burn gOHM
+        @notice burn gAXDS
         @param _from address
         @param _amount uint
      */
@@ -102,14 +102,14 @@ contract gOHM is IgOHM, ERC20 {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice pull index from sOHM token
+     * @notice pull index from sAXDS token
      */
     function index() public view override returns (uint256) {
-        return sOHM.index();
+        return sAXDS.index();
     }
 
     /**
-        @notice converts gOHM amount to OHM
+        @notice converts gAXDS amount to AXDS
         @param _amount uint
         @return uint
      */
@@ -118,7 +118,7 @@ contract gOHM is IgOHM, ERC20 {
     }
 
     /**
-        @notice converts OHM amount to gOHM
+        @notice converts AXDS amount to gAXDS
         @param _amount uint
         @return uint
      */
@@ -144,7 +144,7 @@ contract gOHM is IgOHM, ERC20 {
      * @return The number of votes the account had as of the given block
      */
     function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256) {
-        require(blockNumber < block.number, "gOHM::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "gAXDS::getPriorVotes: not yet determined");
 
         uint256 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {

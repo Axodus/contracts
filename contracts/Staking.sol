@@ -5,19 +5,19 @@ import "./libraries/SafeMath.sol";
 import "./libraries/SafeERC20.sol";
 
 import "./interfaces/IERC20.sol";
-import "./interfaces/IsOHM.sol";
-import "./interfaces/IgOHM.sol";
+import "./interfaces/IsAXDS.sol";
+import "./interfaces/IgAXDS.sol";
 import "./interfaces/IDistributor.sol";
 
-import "./types/OlympusAccessControlled.sol";
+import "./types/AxodusAccessControlled.sol";
 
-contract OlympusStaking is OlympusAccessControlled {
+contract AxodusStaking is AxodusAccessControlled {
     /* ========== DEPENDENCIES ========== */
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IsOHM;
-    using SafeERC20 for IgOHM;
+    using SafeERC20 for IsAXDS;
+    using SafeERC20 for IgAXDS;
 
     /* ========== EVENTS ========== */
 
@@ -42,9 +42,9 @@ contract OlympusStaking is OlympusAccessControlled {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public immutable OHM;
-    IsOHM public immutable sOHM;
-    IgOHM public immutable gOHM;
+    IERC20 public immutable AXDS;
+    IsAXDS public immutable sAXDS;
+    IgAXDS public immutable gAXDS;
 
     Epoch public epoch;
 
@@ -57,20 +57,20 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _ohm,
-        address _sOHM,
-        address _gOHM,
+        address _axds,
+        address _sAXDS,
+        address _gAXDS,
         uint256 _epochLength,
         uint256 _firstEpochNumber,
         uint256 _firstEpochTime,
         address _authority
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_ohm != address(0), "Zero address: OHM");
-        OHM = IERC20(_ohm);
-        require(_sOHM != address(0), "Zero address: sOHM");
-        sOHM = IsOHM(_sOHM);
-        require(_gOHM != address(0), "Zero address: gOHM");
-        gOHM = IgOHM(_gOHM);
+    ) AxodusAccessControlled(IAxodusAuthority(_authority)) {
+        require(_axds != address(0), "Zero address: AXDS");
+        AXDS = IERC20(_axds);
+        require(_sAXDS != address(0), "Zero address: sAXDS");
+        sAXDS = IsAXDS(_sAXDS);
+        require(_gAXDS != address(0), "Zero address: gAXDS");
+        gAXDS = IgAXDS(_gAXDS);
 
         epoch = Epoch({length: _epochLength, number: _firstEpochNumber, end: _firstEpochTime, distribute: 0});
     }
@@ -78,7 +78,7 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice stake OHM to enter warmup
+     * @notice stake AXDS to enter warmup
      * @param _to address
      * @param _amount uint
      * @param _claim bool
@@ -91,7 +91,7 @@ contract OlympusStaking is OlympusAccessControlled {
         bool _rebasing,
         bool _claim
     ) external returns (uint256) {
-        OHM.safeTransferFrom(msg.sender, address(this), _amount);
+        AXDS.safeTransferFrom(msg.sender, address(this), _amount);
         _amount = _amount.add(rebase()); // add bounty if rebase occurred
         if (_claim && warmupPeriod == 0) {
             return _send(_to, _amount, _rebasing);
@@ -103,12 +103,12 @@ contract OlympusStaking is OlympusAccessControlled {
 
             warmupInfo[_to] = Claim({
                 deposit: info.deposit.add(_amount),
-                gons: info.gons.add(sOHM.gonsForBalance(_amount)),
+                gons: info.gons.add(sAXDS.gonsForBalance(_amount)),
                 expiry: epoch.number.add(warmupPeriod),
                 lock: info.lock
             });
 
-            gonsInWarmup = gonsInWarmup.add(sOHM.gonsForBalance(_amount));
+            gonsInWarmup = gonsInWarmup.add(sAXDS.gonsForBalance(_amount));
 
             return _amount;
         }
@@ -132,13 +132,13 @@ contract OlympusStaking is OlympusAccessControlled {
 
             gonsInWarmup = gonsInWarmup.sub(info.gons);
 
-            return _send(_to, sOHM.balanceForGons(info.gons), _rebasing);
+            return _send(_to, sAXDS.balanceForGons(info.gons), _rebasing);
         }
         return 0;
     }
 
     /**
-     * @notice forfeit stake and retrieve OHM
+     * @notice forfeit stake and retrieve AXDS
      * @return uint
      */
     function forfeit() external returns (uint256) {
@@ -147,7 +147,7 @@ contract OlympusStaking is OlympusAccessControlled {
 
         gonsInWarmup = gonsInWarmup.sub(info.gons);
 
-        OHM.safeTransfer(msg.sender, info.deposit);
+        AXDS.safeTransfer(msg.sender, info.deposit);
 
         return info.deposit;
     }
@@ -160,7 +160,7 @@ contract OlympusStaking is OlympusAccessControlled {
     }
 
     /**
-     * @notice redeem sOHM for OHMs
+     * @notice redeem sAXDS for AXDSs
      * @param _to address
      * @param _amount uint
      * @param _trigger bool
@@ -179,39 +179,39 @@ contract OlympusStaking is OlympusAccessControlled {
             bounty = rebase();
         }
         if (_rebasing) {
-            sOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            sAXDS.safeTransferFrom(msg.sender, address(this), _amount);
             amount_ = amount_.add(bounty);
         } else {
-            gOHM.burn(msg.sender, _amount); // amount was given in gOHM terms
-            amount_ = gOHM.balanceFrom(amount_).add(bounty); // convert amount to OHM terms & add bounty
+            gAXDS.burn(msg.sender, _amount); // amount was given in gAXDS terms
+            amount_ = gAXDS.balanceFrom(amount_).add(bounty); // convert amount to AXDS terms & add bounty
         }
 
-        require(amount_ <= OHM.balanceOf(address(this)), "Insufficient OHM balance in contract");
-        OHM.safeTransfer(_to, amount_);
+        require(amount_ <= AXDS.balanceOf(address(this)), "Insufficient AXDS balance in contract");
+        AXDS.safeTransfer(_to, amount_);
     }
 
     /**
-     * @notice convert _amount sOHM into gBalance_ gOHM
+     * @notice convert _amount sAXDS into gBalance_ gAXDS
      * @param _to address
      * @param _amount uint
      * @return gBalance_ uint
      */
     function wrap(address _to, uint256 _amount) external returns (uint256 gBalance_) {
-        sOHM.safeTransferFrom(msg.sender, address(this), _amount);
-        gBalance_ = gOHM.balanceTo(_amount);
-        gOHM.mint(_to, gBalance_);
+        sAXDS.safeTransferFrom(msg.sender, address(this), _amount);
+        gBalance_ = gAXDS.balanceTo(_amount);
+        gAXDS.mint(_to, gBalance_);
     }
 
     /**
-     * @notice convert _amount gOHM into sBalance_ sOHM
+     * @notice convert _amount gAXDS into sBalance_ sAXDS
      * @param _to address
      * @param _amount uint
      * @return sBalance_ uint
      */
     function unwrap(address _to, uint256 _amount) external returns (uint256 sBalance_) {
-        gOHM.burn(msg.sender, _amount);
-        sBalance_ = gOHM.balanceFrom(_amount);
-        sOHM.safeTransfer(_to, sBalance_);
+        gAXDS.burn(msg.sender, _amount);
+        sBalance_ = gAXDS.balanceFrom(_amount);
+        sAXDS.safeTransfer(_to, sBalance_);
     }
 
     /**
@@ -221,17 +221,17 @@ contract OlympusStaking is OlympusAccessControlled {
     function rebase() public returns (uint256) {
         uint256 bounty;
         if (epoch.end <= block.timestamp) {
-            sOHM.rebase(epoch.distribute, epoch.number);
+            sAXDS.rebase(epoch.distribute, epoch.number);
 
             epoch.end = epoch.end.add(epoch.length);
             epoch.number++;
 
             if (address(distributor) != address(0)) {
                 distributor.distribute();
-                bounty = distributor.retrieveBounty(); // Will mint ohm for this contract if there exists a bounty
+                bounty = distributor.retrieveBounty(); // Will mint axds for this contract if there exists a bounty
             }
-            uint256 balance = OHM.balanceOf(address(this));
-            uint256 staked = sOHM.circulatingSupply();
+            uint256 balance = AXDS.balanceOf(address(this));
+            uint256 staked = sAXDS.circulatingSupply();
             if (balance <= staked.add(bounty)) {
                 epoch.distribute = 0;
             } else {
@@ -244,7 +244,7 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     /**
-     * @notice send staker their amount as sOHM or gOHM
+     * @notice send staker their amount as sAXDS or gAXDS
      * @param _to address
      * @param _amount uint
      * @param _rebasing bool
@@ -255,29 +255,29 @@ contract OlympusStaking is OlympusAccessControlled {
         bool _rebasing
     ) internal returns (uint256) {
         if (_rebasing) {
-            sOHM.safeTransfer(_to, _amount); // send as sOHM (equal unit as OHM)
+            sAXDS.safeTransfer(_to, _amount); // send as sAXDS (equal unit as AXDS)
             return _amount;
         } else {
-            gOHM.mint(_to, gOHM.balanceTo(_amount)); // send as gOHM (convert units from OHM)
-            return gOHM.balanceTo(_amount);
+            gAXDS.mint(_to, gAXDS.balanceTo(_amount)); // send as gAXDS (convert units from AXDS)
+            return gAXDS.balanceTo(_amount);
         }
     }
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice returns the sOHM index, which tracks rebase growth
+     * @notice returns the sAXDS index, which tracks rebase growth
      * @return uint
      */
     function index() public view returns (uint256) {
-        return sOHM.index();
+        return sAXDS.index();
     }
 
     /**
      * @notice total supply in warmup
      */
     function supplyInWarmup() public view returns (uint256) {
-        return sOHM.balanceForGons(gonsInWarmup);
+        return sAXDS.balanceForGons(gonsInWarmup);
     }
 
     /**

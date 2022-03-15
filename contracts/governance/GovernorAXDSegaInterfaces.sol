@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-contract GovernorOHMegaEvents {
+contract GovernorAXDSegaEvents {
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
         uint256 id,
@@ -52,7 +52,7 @@ contract GovernorOHMegaEvents {
     event NewAdmin(address oldAdmin, address newAdmin);
 }
 
-contract GovernorOHMegaDelegatorStorage {
+contract GovernorAXDSegaDelegatorStorage {
     /// @notice Administrator for this contract
     address public admin;
 
@@ -64,12 +64,12 @@ contract GovernorOHMegaDelegatorStorage {
 }
 
 /**
- * @title Storage for Governor OHMega Delegate
- * @notice For future upgrades, do not change GovernorOHMegaDelegateStorageV1. Create a new
- * contract which implements GovernorOHMegaDelegateStorageV1 and following the naming convention
- * GovernorOHMegaDelegateStorageVX.
+ * @title Storage for Governor AXDSega Delegate
+ * @notice For future upgrades, do not change GovernorAXDSegaDelegateStorageV1. Create a new
+ * contract which implements GovernorAXDSegaDelegateStorageV1 and following the naming convention
+ * GovernorAXDSegaDelegateStorageVX.
  */
-contract GovernorOHMegaDelegateStorageV1 is GovernorOHMegaDelegatorStorage {
+contract GovernorAXDSegaDelegateStorageV1 is GovernorAXDSegaDelegatorStorage {
     /// @notice The delay before voting on a proposal may take place, once proposed, in blocks
     uint256 public votingDelay;
 
@@ -85,16 +85,16 @@ contract GovernorOHMegaDelegateStorageV1 is GovernorOHMegaDelegatorStorage {
     /// @notice The total number of proposals
     uint256 public proposalCount;
 
-    /// @notice The address of the Olympus Protocol Timelock
+    /// @notice The address of the Axodus Protocol Timelock
     TimelockInterface public timelock;
 
-    /// @notice The address of the Wrapped sOHM
+    /// @notice The address of the Wrapped sAXDS
     /// @notice change from original contract
-    gOHMInterface public gOHM;
+    gAXDSInterface public gAXDS;
 
-    /// @notice The address of the sOHM
+    /// @notice The address of the sAXDS
     /// @notice change from original contract
-    sOHMInterface public sOHM;
+    sAXDSInterface public sAXDS;
 
     /// @notice The official record of all proposals ever proposed
     mapping(uint256 => Proposal) public proposals;
@@ -127,10 +127,10 @@ contract GovernorOHMegaDelegateStorageV1 is GovernorOHMegaDelegatorStorage {
         uint256 againstVotes;
         /// @notice Current number of votes for abstaining for this proposal
         uint256 abstainVotes;
-        /// @notice Threshold of gOHM at start of proposal
+        /// @notice Threshold of gAXDS at start of proposal
         /// @notice change from original contract
         uint256 thresholdAtStart;
-        /// @notice Number of gOHM needed to pass vote
+        /// @notice Number of gAXDS needed to pass vote
         /// @notice change from original contract
         uint256 votesNeeded;
         /// @notice Flag marking whether the proposal has been canceled
@@ -199,7 +199,7 @@ interface TimelockInterface {
 }
 
 /// @notice change from original contract
-interface gOHMInterface {
+interface gAXDSInterface {
     function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
 
     function balanceTo(uint256 _amount) external view returns (uint256);
@@ -208,7 +208,7 @@ interface gOHMInterface {
 }
 
 /// @notice change from original contract
-interface sOHMInterface {
+interface sAXDSInterface {
     function circulatingSupply() external view returns (uint256);
 }
 
